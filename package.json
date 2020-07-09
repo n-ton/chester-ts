@@ -1,0 +1,33 @@
+{
+  "name": "chester-ts",
+  "version": "1.0.0",
+  "description": "WebDriver automation framework on typescript",
+  "author": "Anton Ostrenko",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/chromedriver": "^81.0.0",
+    "@types/mocha": "^7.0.2",
+    "@types/selenium-webdriver": "^4.0.9",
+    "allure-commandline": "^2.13.0",
+    "chai": "^4.2.0",
+    "chromedriver": "^83.0.0",
+    "cucumber": "^6.0.5",
+    "eslint": "^7.2.0",
+    "geckodriver": "^1.19.1",
+    "mocha": "^8.0.1",
+    "selenium-webdriver": "^4.0.0-alpha.7",
+    "typescript": "^3.9.5"
+  },
+  "scripts": {
+    "clean": "cd typescript && rm -r target",
+    "compile": "cd typescript && tsc",
+    "lint": "./node_modules/.bin/eslint",
+    "test-chrome": "node_modules/.bin/mocha typescript/target/specs/**.spec.js --timeout 0 --config.browser chrome",
+    "test-edge": "node_modules/.bin/mocha typescript/target/specs/**.spec.js --timeout 0 --config.browser edge",
+    "test-firefox": "node_modules/.bin/mocha typescript/target/specs/**.spec.js --timeout 0 --config.browser firefox",
+    "debug": "node_modules/.bin/mocha typescript/target/sandbox/sandbox.spec.js --timeout 0",
+    "google": "node typescript/target/sandbox/google_search_run.js"
+  }
+}
