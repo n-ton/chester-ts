@@ -21,13 +21,18 @@
     "typescript": "^3.9.5"
   },
   "scripts": {
-    "clean": "cd typescript && rm -r target",
-    "compile": "cd typescript && tsc",
     "lint": "./node_modules/.bin/eslint",
-    "test-chrome": "node_modules/.bin/mocha typescript/target/specs/**.spec.js --timeout 0 --config.browser chrome",
-    "test-edge": "node_modules/.bin/mocha typescript/target/specs/**.spec.js --timeout 0 --config.browser edge",
-    "test-firefox": "node_modules/.bin/mocha typescript/target/specs/**.spec.js --timeout 0 --config.browser firefox",
-    "debug": "node_modules/.bin/mocha typescript/target/sandbox/sandbox.spec.js --timeout 0",
-    "google": "node typescript/target/sandbox/google_search_run.js"
+    "test:clean": "cd test && rm -r target",
+    "test:compile": "cd test && tsc",
+    "test:acceptance": "node test/target/src/runners/acceptance-runner.js",
+    "test:e2e": "node test/target/src/runners/e2e-runner.js",
+    "test:acceptance-ci": "yarn run test:acceptance --capsConfig chrome_iphone5 --envConfig ci_acceptance --selenoidConfig default",
+    "test:e2e-ci": "yarn run test:e2e --capsConfig chrome_iphone5 --envConfig ci --selenoidConfig default",
+    "test-chrome": "yarn run test:acceptance --capsConfig chrome",
+    "test-chrome-mobile": "yarn run test:acceptance --capsConfig chrome_iphone5 --envConfig prod",
+    "test-chrome-tablet": "yarn run test:acceptance --capsConfig chrome_ipad",
+    "test-edge": "yarn run test:acceptance --capsConfig edge",
+    "test-firefox": "yarn run test:acceptance --capsConfig firefox",
+    "test:debug": "node_modules/.bin/mocha test/target/sandbox/google_search_run.js --timeout 0"
   }
 }
