@@ -1,5 +1,6 @@
-interface ILocatable {
+export interface ILocatable {
   getLocator(): string | undefined
+  getFullLocator(): string
   setLocator(locator: string): void
 
   useContextLookup(): boolean
@@ -7,7 +8,7 @@ interface ILocatable {
 
   getContext(): ILocatable | undefined
   setContext(context: ILocatable): void
-  getLookupContext(useContextLookup: boolean): Array<ILocatable>
+  getLookupContext(): Array<ILocatable> | undefined
   getLocatableContext(): string
   getLoggableContext(): string
 

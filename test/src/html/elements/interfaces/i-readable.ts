@@ -1,1 +1,1 @@
-interface IReadable {}
+export interface IReadable {}

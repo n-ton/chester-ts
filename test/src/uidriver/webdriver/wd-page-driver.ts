@@ -1,40 +1,66 @@
+import { error } from 'selenium-webdriver'
 import { IPageDriver } from '../interfaces/i-page-driver'
 import { FactoryProvider } from '../factory-provider'
+import ReporterFactory from '../../reporting/reporter-factory'
+import IReporter from '../../reporting/i-reporter'
 
 export class WdPageDriver implements IPageDriver {
+  private reporter: IReporter = ReporterFactory.getReporter(WdPageDriver.name)
+
   async goToUrl(url: string) {
-    console.info(`Opening URL '${url}'`)
-    await FactoryProvider.getWebDriverFactory().getDriver().get(url)
+    this.reporter.info('Opening URL', `${url}`)
+    try {
+      await (await FactoryProvider.getWebDriverFactory().getDriver()).get(url)
+    } catch (e) {
+      if (e instanceof error.InvalidArgumentError) {
+        throw new Error(`Trying to open invalid URL: ${url}\n` + e.message)
+      }
+    }
   }
 
   async maximizeWindow() {
-    console.log('Maximizing window')
-    await FactoryProvider.getWebDriverFactory()
-      .getDriver()
+    this.reporter.info('Maximizing window.')
+    await (await FactoryProvider.getWebDriverFactory().getDriver())
       .manage()
       .window()
       .maximize()
   }
 
   async refresh() {
-    console.log('Refreshing page')
-    await FactoryProvider.getWebDriverFactory().getDriver().navigate().refresh()
+    this.reporter.info('Refreshing page.')
+    await (await FactoryProvider.getWebDriverFactory().getDriver())
+      .navigate()
+      .refresh()
   }
 
   async navigateTo(url: string) {
-    console.log(`Navigating to a new URL '${url}'`)
-    await FactoryProvider.getWebDriverFactory().getDriver().navigate().to(url)
+    this.reporter.info('Navigating to a new URL', `${url}`)
+    await (await FactoryProvider.getWebDriverFactory().getDriver())
+      .navigate()
+      .to(url)
   }
 
   async getTitle(): Promise<string> {
-    console.log('Getting title')
-    return await FactoryProvider.getWebDriverFactory().getDriver().getTitle()
+    this.reporter.info('Getting title.')
+    return await (
+      await FactoryProvider.getWebDriverFactory().getDriver()
+    ).getTitle()
   }
 
   async takePageScreenshot(): Promise<string> {
-    console.log('Getting page screenshot')
-    return await FactoryProvider.getWebDriverFactory()
-      .getDriver()
-      .takeScreenshot()
+    this.reporter.info('Taking page screenshot.')
+    return await (
+      await FactoryProvider.getWebDriverFactory().getDriver()
+    ).takeScreenshot()
+  }
+
+  async getCurrentUrl(): Promise<string> {
+    this.reporter.info('Getting current URL.')
+    const url: string = await (
+      await FactoryProvider.getWebDriverFactory().getDriver()
+    ).getCurrentUrl()
+    this.reporter.info('Current URL', url)
+
+    return url
   }
 }

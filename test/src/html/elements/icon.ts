@@ -6,7 +6,7 @@ class Icon extends AbstractElement {
   async getClassValue(): Promise<string> {
     return await FactoryProvider.getWebDriverFactory()
       .getElementDriver()
-      .getAttributeValueOfElement(this, 'class')
+      .getAttributeValue(this, 'class')
   }
 
   async readValue(): Promise<string> {

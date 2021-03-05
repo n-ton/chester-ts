@@ -1,3 +1,6 @@
+import { ILocatable } from '../../interfaces/i-locatable'
+import { ISelectElementDriver } from '../interfaces/i-select-element-driver'
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 class WdSelectElementDriver implements ISelectElementDriver {
   selectByIndex(element: ILocatable, index: number): Promise<void> {

@@ -1,7 +1,13 @@
-import { isUndefined } from 'util'
+import { WebElement } from 'selenium-webdriver'
+import { isUndefined } from 'lodash'
 import StringUtils from '../../utils/string-utils'
 import IInteractiveElement from '../elements/interfaces/i-interactive-element'
 import { FactoryProvider } from '../../uidriver/factory-provider'
+import { ILocatable } from '../../interfaces/i-locatable'
+import ReporterFactory from '../../reporting/reporter-factory'
+import IReporter from '../../reporting/i-reporter'
+import HttpUtils from '../../utils/http-utils'
+import Image from '../elements/image'
 import IInteractiveContainer from './interfaces/i-interactive-container'
 import IBatchElementsContainer from './interfaces/i-batch-elements-container'
 import { IHaveUrl } from './interfaces/i-haveurl'
@@ -10,7 +16,7 @@ export default class AbstractContainer
   implements IBatchElementsContainer, IHaveUrl {
   private name: string = this.constructor.name
   private locator: string | undefined
-  private url: string | undefined
+  protected url: string | undefined
   private context: ILocatable | undefined
   private optional: boolean
   private contextLookup: boolean
@@ -18,6 +24,10 @@ export default class AbstractContainer
     string,
     IInteractiveElement
   >()
+
+  protected reporter: IReporter = ReporterFactory.getReporter(
+    AbstractContainer.name
+  )
 
   constructor(
     locator?: string,
@@ -31,6 +41,12 @@ export default class AbstractContainer
     this.context = context
     this.optional = optional
     this.contextLookup = contextLookup
+  }
+
+  async getText(): Promise<string> {
+    return await FactoryProvider.getWebDriverFactory()
+      .getElementDriver()
+      .getText(this)
   }
 
   async scrollTo(): Promise<void> {
@@ -87,53 +103,66 @@ export default class AbstractContainer
     return this.optional
   }
 
-  getLookupContext(useContextLookup: boolean): Array<ILocatable> {
+  getLookupContext(): Array<ILocatable> | undefined {
     let elements: Array<ILocatable> = new Array<ILocatable>()
 
-    if (!useContextLookup) {
+    if (this.useContextLookup()) {
       let context: any = this.getContext()
 
-      while (context !== undefined && context.getLocator() !== undefined) {
+      while (!(isUndefined(context) || isUndefined(context.getLocator()))) {
         elements.push(context)
-        context = context.getContext()
-      }
-    } else if (useContextLookup) {
-      if (this.useContextLookup()) {
-        let context: any = this.getContext()
-
-        while (context !== undefined && context.getLocator() !== undefined) {
-          elements.push(context)
-          if (!context.useContextLookup()) {
-            break
-          } else {
-            context = context.getContext()
-          }
+        if (!context.useContextLookup()) {
+          break
+        } else {
+          context = context.getContext()
         }
       }
+    } else {
+      return undefined
     }
-    if (elements.reverse().length === 0) {
-      console.warn(`No context found for element '${this.getName()}'`)
+    return elements.reverse()
+  }
+
+  getFullLocator(): string {
+    let elements: Array<ILocatable> | undefined = this.getLookupContext()
+    let fullLocator: string | undefined = this.locator
+
+    if (fullLocator) {
+      if (elements) {
+        while (elements.length > 0) {
+          const locator = elements.pop()?.getLocator()
+          if (!isUndefined(locator))
+            fullLocator = fullLocator.replace('.', locator)
+        }
+      }
+      return fullLocator
+    } else {
+      this.reporter.warn('Locator is not defined in container: ' + this.name)
+      return ''
     }
-    return elements
   }
 
   getLoggableContext(): string {
-    return this.getLookupContext(true)
-      .map(
-        (iLocatable) =>
-          iLocatable.getName() + ' [' + iLocatable.getLocator() + ']'
-      )
-      .join(' > ')
+    let context = this.getLookupContext()
+    return isUndefined(context)
+      ? ''
+      : context
+          .map(
+            (iLocatable) =>
+              iLocatable.getName() + ' [' + iLocatable.getLocator() + ']'
+          )
+          .join(' > ')
   }
 
   getLocatableContext(): string {
-    return this.getLookupContext(true)
-      .map((iLocatable) => iLocatable.getLocator())
-      .join(' > ')
+    let context = this.getLookupContext()
+    return isUndefined(context)
+      ? ''
+      : context.map((iLocatable) => iLocatable.getLocator()).join(' > ')
   }
 
   getLoggableName(): string {
-    return this.getName() + ' [' + this.getLocator() + ']'
+    return this.getName() + ' [' + this.getFullLocator() + ']'
   }
 
   changeValues(inputData: Map<string, object>): IBatchElementsContainer {
@@ -151,36 +180,47 @@ export default class AbstractContainer
       .getElementDriver()
       .getText(element)
   }
+
   performAction(element: IInteractiveElement): Promise<void> {
     return FactoryProvider.getWebDriverFactory()
       .getElementDriver()
       .clickOnElement(element)
   }
 
+  async isStale(shouldWait?: boolean): Promise<boolean> {
+    return await FactoryProvider.getWebDriverFactory()
+      .getElementDriver()
+      .isStale(this, shouldWait)
+  }
+
   async isDisplayed(
     checkInnerElements?: boolean,
-    shouldWait?: boolean
+    shouldWait?: boolean | number,
+    scrollAndHighlight: boolean = true
   ): Promise<boolean> {
-    if (isUndefined(shouldWait) || !shouldWait) {
-      await FactoryProvider.getWebDriverFactory().setWaitingTimeout({
-        implicit: 0,
-      })
-    }
-
-    if (
-      isUndefined(checkInnerElements) ||
-      !checkInnerElements ||
-      this.elements.size === 0
-    ) {
+    if (!checkInnerElements || this.elements.size === 0) {
       return await FactoryProvider.getWebDriverFactory()
         .getElementDriver()
-        .isElementDisplayed(this)
+        .isElementDisplayed(this, shouldWait, scrollAndHighlight)
     } else {
-      this.elements.forEach(async (element) => {
-        if (!element.isOptional() && !(await element.isDisplayed(shouldWait))) {
-          return false
+      for (const [, element] of this.elements) {
+        const httpUtils: HttpUtils = new HttpUtils()
+        if (!element.isOptional()) {
+          let failCondition: boolean = false
+          if (element instanceof Image) {
+            failCondition =
+              (await httpUtils.headRequest(await element.getSrc())) !== 200
+          }
+          failCondition =
+            !(await FactoryProvider.getWebDriverFactory()
+              .getElementDriver()
+              .isElementDisplayed(element, false, scrollAndHighlight)) &&
+            failCondition
+          if (failCondition) {
+            return false
+          }
         }
-      })
+      }
     }
     return true
   }
@@ -189,23 +229,41 @@ export default class AbstractContainer
     throw new Error('Method not implemented.')
   }
   getElements(): Map<string, IInteractiveElement> {
-    throw new Error('Method not implemented.')
+    return this.elements
   }
 
   addElement(element: IInteractiveElement) {
     let locator: any = element.getLocator()
-    this.elements.set(StringUtils.locatorToId(locator), element)
+    this.elements.set(StringUtils.sanitize(locator), element)
   }
 
-  async waitUntilIsVisible(): Promise<void> {
+  async waitUntilIsVisible(timeout?: number): Promise<boolean | WebElement> {
     return await FactoryProvider.getWebDriverFactory()
       .getWaitingDriver()
-      .waitUntilElementIsVisible(this)
+      .waitUntilElementIsVisible(this, timeout)
   }
 
-  async waitUntilIsLocated(): Promise<void> {
+  async waitUntilIsNotVisible(): Promise<boolean | WebElement> {
     return await FactoryProvider.getWebDriverFactory()
       .getWaitingDriver()
-      .waitUntilElementIsLocated(this)
+      .waitUntilElementIsNotVisible(this)
+  }
+
+  async waitUntilIsStale(timeout?: number): Promise<void | boolean> {
+    return await FactoryProvider.getWebDriverFactory()
+      .getWaitingDriver()
+      .waitUntilElementIsStale(this, timeout)
+  }
+
+  async waitUntilIsLocated(timeout?: number): Promise<boolean | WebElement> {
+    return await FactoryProvider.getWebDriverFactory()
+      .getWaitingDriver()
+      .waitUntilElementIsLocated(this, timeout)
+  }
+
+  getCssValue(css: string): Promise<string> {
+    return FactoryProvider.getWebDriverFactory()
+      .getElementDriver()
+      .getCssValue(this, css)
   }
 }

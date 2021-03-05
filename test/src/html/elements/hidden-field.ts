@@ -5,6 +5,6 @@ export default class HiddenField extends AbstractElement {
   async changeValue(value: any): Promise<void> {
     await FactoryProvider.getWebDriverFactory()
       .getElementDriver()
-      .setAttributeValueOfElement(this, 'value', value)
+      .setAttributeValue(this, 'value', value)
   }
 }

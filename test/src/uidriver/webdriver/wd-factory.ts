@@ -1,18 +1,29 @@
 import { WebDriver, Capabilities, ITimeouts } from 'selenium-webdriver'
 import { error } from 'selenium-webdriver'
+import { isNull, isUndefined } from 'lodash'
 import { IDriverFactory } from '../interfaces/i-driver-factory'
 import { baseConfig } from '../../config/base-config'
 import { ICapsConfig } from '../../config/driver/i-caps-config'
 import { ISelenoidConfig } from '../../config/driver/selenoid/i-selenoid-config'
 import { allConfigs } from '../../config/all-configs'
+import ReporterFactory from '../../reporting/reporter-factory'
+import IReporter from '../../reporting/i-reporter'
+import { FactoryProvider } from '../factory-provider'
 import { WdPageDriver } from './wd-page-driver'
 import { WdElementDriver } from './wd-element-driver'
 import { WdWaitingDriver } from './wd-waiting-driver'
+import WdElementsDriver from './wd-elements-driver'
+import { WdManager } from './wd-manager'
 
 export abstract class WebDriverFactory implements IDriverFactory {
+  protected reporter: IReporter = ReporterFactory.getReporter(
+    WebDriverFactory.name
+  )
+
   private driver: WebDriver | undefined
   private pageDriver: WdPageDriver | undefined
   private elementDriver: WdElementDriver | undefined
+  private elementsDriver: WdElementsDriver | undefined
   private waitingDriver: WdWaitingDriver | undefined
   private namedDrivers: Map<string, WebDriver> = new Map()
   private currentSession: string = 'default_driver_session'
@@ -20,14 +31,17 @@ export abstract class WebDriverFactory implements IDriverFactory {
   protected selenoidConfig: ISelenoidConfig | undefined =
     allConfigs.selenoidConfig
 
-  getDriver(): WebDriver {
-    if (this.driver === undefined || this.driver == null) {
-      console.info('Starting driver.')
+  async getDriver(): Promise<WebDriver> {
+    if (isUndefined(this.driver) || isNull(this.driver === null)) {
+      this.reporter.debug('Starting driver.')
       this.driver = this.createDriver(this.capsConfig)
+      await this.driver.getCapabilities().then((result) => {
+        this.reporter.debug(result)
+      })
       this.namedDrivers.set(this.currentSession, this.driver)
-      this.setWaitingTimeout()
+      await this.setWaitingTimeout()
     } else {
-      console.info('Getting driver.')
+      this.reporter.debug('Getting driver.')
     }
     return this.driver
   }
@@ -35,7 +49,7 @@ export abstract class WebDriverFactory implements IDriverFactory {
   protected abstract createDriver(browserConfig: ICapsConfig): WebDriver
 
   isDriverStarted(): boolean {
-    return this.driver !== null && this.driver !== undefined
+    return !isNull(this.driver) && !isUndefined(this.driver)
   }
 
   async isBrowserAlive(): Promise<boolean | undefined> {
@@ -45,34 +59,60 @@ export abstract class WebDriverFactory implements IDriverFactory {
         awh = await this.driver?.getAllWindowHandles()
       } catch (e) {
         if (e instanceof error.NoSuchSessionError) {
-          console.error(e.name + ': ' + e.message)
+          this.reporter.error(e.name + ': ' + e.message)
         } else {
-          console.error(`Unknown error ${e.name}`)
+          this.reporter.error(`Unknown error ${e.name}`)
           throw e
         }
         awh = undefined
         this.driver = undefined
       }
-      console.info(`All window handles ${awh}.`)
-      return awh !== undefined ? awh.length !== 0 : false
+      this.reporter.info('All window handles', `${awh}`)
+      return !isUndefined(awh) && !!awh.length
     } else {
-      console.warn('Driver is not started.')
+      this.reporter.warn('Driver is not started.')
     }
   }
 
-  async quitDriver(): Promise<void> {
+  async quitDriver(context?: Mocha.Context): Promise<void> {
     if (this.isDriverStarted()) {
       const browserName = (await this.getCapabilities())?.getBrowserName()
       const sessionId = await this.getCurrentSessionId()
-      try {
+
+      if (
+        context?.currentTest?.state === 'failed' ||
+        baseConfig.collectArtifacts
+      ) {
+        try {
+          let title = context?.currentTest?.title + ' ' + new Date().getTime()
+
+          this.reporter.info('Collecting logs.')
+          this.reporter.attachLogs(
+            title,
+            await WdManager.getAvailableLogsFormatted()
+          )
+          this.reporter.attachScreenshot(
+            title,
+            await FactoryProvider.getWebDriverFactory()
+              .getPageDriver()
+              .takePageScreenshot()
+          )
+        } catch (error) {
+          this.reporter.error('Collecting logs failed', error.message)
+        } finally {
+          await this.driver?.quit()
+          this.reporter.info('Quit current session', `${sessionId}`)
+          this.reporter.info('Closing browser', `${browserName}`)
+          this.driver = undefined
+        }
+      } else {
         await this.driver?.quit()
-      } finally {
-        console.warn(`Quit current session ${sessionId}.`)
+        this.reporter.info('Quit current session', `${sessionId}`)
+        this.reporter.info('Closing browser', `${browserName}`)
+        this.driver = undefined
       }
-      console.info(`Closing browser ${browserName}.`)
-      this.driver = undefined
     } else {
-      console.warn('Driver is not started.')
+      this.reporter.warn('Driver is not started.')
     }
   }
 
@@ -81,27 +121,31 @@ export abstract class WebDriverFactory implements IDriverFactory {
       let capabilities = await this.driver?.getCapabilities()
       return capabilities
     } else {
-      console.warn('Driver is not started.')
+      this.reporter.warn('Driver is not started.')
     }
   }
 
   async getCurrentWindowHandle(): Promise<string | undefined> {
     if (await this.isBrowserAlive()) {
       let currentWindowHandle = await this.driver?.getWindowHandle()
-      console.info(`Current window ${currentWindowHandle}.`)
+      this.reporter.info('Current window', `${currentWindowHandle}`)
       return currentWindowHandle
     } else {
-      console.warn('Browser is not alive. There are no available windows.')
+      this.reporter.warn(
+        'Browser is not alive. There are no available windows.'
+      )
     }
   }
 
   async closeWindow(): Promise<void> {
     if (await this.isBrowserAlive()) {
       let currentWindowHandle = await this.getCurrentWindowHandle()
-      console.info(`Closing current window ${currentWindowHandle}.`)
+      this.reporter.info('Closing current window', `${currentWindowHandle}`)
       await this.driver?.close()
     } else {
-      console.warn('Browser is not alive. There are no available windows.')
+      this.reporter.warn(
+        'Browser is not alive. There are no available windows.'
+      )
     }
   }
 
@@ -109,10 +153,10 @@ export abstract class WebDriverFactory implements IDriverFactory {
     if (this.isDriverStarted()) {
       let currentSession = await this.driver?.getSession()
       let currentSessionId = currentSession?.getId()
-      console.info(`Current session ${currentSessionId}.`)
+      this.reporter.info('Current session', `${currentSessionId}`)
       return currentSessionId
     } else {
-      console.warn('Driver is not started.')
+      this.reporter.warn('Driver is not started.')
     }
   }
 
@@ -123,26 +167,44 @@ export abstract class WebDriverFactory implements IDriverFactory {
       implicit: baseConfig.timeouts.implicit,
     }
   ): Promise<void> {
-    console.info(`Setting global timeout ${Object.entries(timeout)}`)
-    await this.driver?.manage().setTimeouts(timeout)
+    this.reporter.debug('Setting global timeout', `${JSON.stringify(timeout)}`)
+    await this.driver
+      ?.manage()
+      .setTimeouts(timeout)
+      .then(() => this.reporter.debug('OK: Setting global timeout'))
+      .catch((result) => console.error(result))
   }
 
   async getWaitingTimeout(): Promise<ITimeouts | undefined> {
-    console.info('Getting global timeout')
-    return await this.driver?.manage().getTimeouts()
+    let timeout:
+      | ITimeouts
+      | undefined = await this.driver?.manage().getTimeouts()
+    this.reporter.debug('Getting global timeout', `${JSON.stringify(timeout)}`)
+    return timeout
   }
 
   async maximizeWindow(): Promise<void> {
     if (await this.isBrowserAlive()) {
-      console.info('Maximizing window.')
+      this.reporter.info('Maximizing window.')
       await this.driver?.manage().window().maximize()
     } else {
-      console.warn('Browser is not alive. There are no available windows.')
+      this.reporter.warn(
+        'Browser is not alive. There are no available windows.'
+      )
+    }
+  }
+
+  async sleep(amount: number): Promise<void> {
+    if (this.isDriverStarted()) {
+      this.reporter.info('Driver sleeping', amount)
+      this.driver?.sleep(amount)
+    } else {
+      this.reporter.warn('Driver is not started.')
     }
   }
 
   public getPageDriver(): WdPageDriver {
-    if (this.pageDriver == null || this.pageDriver === undefined) {
+    if (isNull(this.pageDriver) || isUndefined(this.pageDriver)) {
       return new WdPageDriver()
     } else {
       return this.pageDriver
@@ -150,15 +212,23 @@ export abstract class WebDriverFactory implements IDriverFactory {
   }
 
   public getElementDriver(): WdElementDriver {
-    if (this.elementDriver == null || this.elementDriver === undefined) {
+    if (isNull(this.elementDriver) || isUndefined(this.elementDriver)) {
       return new WdElementDriver()
     } else {
       return this.elementDriver
     }
   }
 
+  public getElementsDriver(): WdElementsDriver {
+    if (isNull(this.elementsDriver) || isUndefined(this.elementsDriver)) {
+      return new WdElementsDriver()
+    } else {
+      return this.elementsDriver
+    }
+  }
+
   public getWaitingDriver(): WdWaitingDriver {
-    if (this.waitingDriver == null || this.waitingDriver === undefined) {
+    if (isNull(this.waitingDriver) || isUndefined(this.waitingDriver)) {
       return new WdWaitingDriver()
     } else {
       return this.waitingDriver

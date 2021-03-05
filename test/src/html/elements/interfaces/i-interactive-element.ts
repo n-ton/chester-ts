@@ -1,3 +1,4 @@
+import { ILocatable } from '../../../interfaces/i-locatable'
 import AbstractAction from '../actions/abstract-action'
 
 export default interface IInteractiveElement extends ILocatable {

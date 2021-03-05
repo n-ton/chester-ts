@@ -17,10 +17,10 @@ describe('Google search', () => {
       .to.contain('https://github.com/n-ton')
 
     expect(await GooglePage.results.result.link.readValue(), 'First link text contains username, name and surname')
-      .to.contain('n-ton (Anton Ostrenko)')
+      .to.contain('n-ton')
   })
 
-  afterEach('Quit browser', async () => {
-    await FactoryProvider.getWebDriverFactory().quitDriver()
+  afterEach('Quit browser', async function () {
+    await FactoryProvider.getWebDriverFactory().quitDriver(this)
   })
 })

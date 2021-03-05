@@ -1,4 +1,6 @@
-interface IActionsChain {
+import { ILocatable } from '../../interfaces/i-locatable'
+
+export interface IActionsChain {
   contextClick(element: ILocatable): Promise<IActionsChain>
   clear(): Promise<IActionsChain>
   click(element: ILocatable): Promise<IActionsChain>

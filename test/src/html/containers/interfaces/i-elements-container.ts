@@ -1,3 +1,4 @@
+import { ILocatable } from '../../../interfaces/i-locatable'
 import IInteractiveElement from '../../elements/interfaces/i-interactive-element'
 
 export default interface IElementsContainer extends ILocatable {

@@ -10,7 +10,7 @@ export class ChromeDriverCreator implements IWebDriverCreator {
     const selenoidConfig: ISelenoidConfig | undefined =
       allConfigs.selenoidConfig
 
-    let webDriver: ThenableWebDriver = new WebDriverBuilder()
+    const webDriver: ThenableWebDriver = new WebDriverBuilder()
       .usingServer(selenoidConfig?.url)
       .withCapabilities(capabilities)
       .build()

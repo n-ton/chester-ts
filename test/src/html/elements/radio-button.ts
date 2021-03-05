@@ -27,7 +27,7 @@ export default class RadioButton extends AbstractElement {
   async readValue(): Promise<string> {
     return await FactoryProvider.getWebDriverFactory()
       .getElementDriver()
-      .getAttributeValueOfElement(this, 'value')
+      .getAttributeValue(this, 'value')
   }
 
   async changeValue(value: any): Promise<void> {
