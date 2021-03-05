@@ -2,16 +2,29 @@ import { IConfig } from '../i-config'
 import { IOptions } from './i-options'
 
 export interface ICapsConfig extends IConfig {
-  browserName: string
+  view: View
+  browserName: BrowserName
   browserVersion?: string
-  pageLoadStrategy?: string
+  pageLoadStrategy?: PageLoadStrategy
   options?: IOptions
 }
 
-export const BrowserName = {
-  CHROME: 'chrome',
-  EDGE: 'edge',
-  FIREFOX: 'firefox',
-  IE: 'ie',
-  SAFARI: 'safari',
+export enum BrowserName {
+  CHROME = 'chrome',
+  EDGE = 'edge',
+  IE = 'ie',
+  FIREFOX = 'firefox',
+  SAFARI = 'safari',
+}
+
+export enum View {
+  DESKTOP = 'desktop',
+  MOBILE = 'mobile',
+  TABLET = 'tablet',
+}
+
+export enum PageLoadStrategy {
+  NONE = 'none',
+  EAGER = 'eager',
+  NORMAL = 'normal',
 }

@@ -1,7 +1,7 @@
 export interface IOptions {
   arguments?: string[]
   headless?: boolean
-  windowSize?: {}
+  windowSize?: { width: number; height: number }
   excludedSwitches?: string[]
   extensions?: any[]
   chromeBinaryPath?: string
@@ -11,6 +11,8 @@ export interface IOptions {
   localState?: any
   chromeLogFile?: string
   chromeMinidumpPath?: string
-  mobileEmulation?: string
+  mobileEmulation?:
+    | { deviceName: string }
+    | { width: number; height: number; pixelRatio?: number }
   edgeChromium?: boolean
 }

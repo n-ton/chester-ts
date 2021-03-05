@@ -1,13 +1,19 @@
-import { isUndefined } from 'util'
+import { isUndefined } from 'lodash'
 import { WebDriver, Capabilities } from 'selenium-webdriver'
 import { WebDriverFactory } from '../wd-factory'
 import { ICapsConfig } from '../../../config/driver/i-caps-config'
 import SelenoidConfigReader from '../../../config/driver/selenoid/selenoid-config-reader'
+import ReporterFactory from '../../../reporting/reporter-factory'
 import { ChromeDriverCreator } from './chrome-driver-creator'
 import ChromeCapabilitiesProvider from './chrome-capabilities-provider'
 import ChromeOptionsProvider from './chrome-options-provider'
 
 export class ChromeDriverFactory extends WebDriverFactory {
+  constructor() {
+    super()
+    this.reporter = ReporterFactory.getReporter(ChromeDriverFactory.name)
+  }
+
   createDriver(capsConfig: ICapsConfig): WebDriver {
     let selenoidCapabilities: Capabilities = new Capabilities()
     if (!isUndefined(this.selenoidConfig)) {
@@ -16,12 +22,10 @@ export class ChromeDriverFactory extends WebDriverFactory {
       )
     }
 
-    let capabilities: Capabilities = new ChromeCapabilitiesProvider()
+    const capabilities: Capabilities = new ChromeCapabilitiesProvider()
       .getCapabilities(capsConfig)
       .merge(new ChromeOptionsProvider().getOptions(capsConfig))
       .merge(selenoidCapabilities)
-
-    console.info(capabilities)
 
     return new ChromeDriverCreator().createDriver(capabilities)
   }

@@ -1,3 +1,4 @@
+import { ILocatable } from '../../../interfaces/i-locatable'
 import { FactoryProvider } from '../../../uidriver/factory-provider'
 import { IElementDriver } from '../../../uidriver/interfaces/i-element-driver'
 

@@ -1,15 +1,26 @@
 import { iphone_x } from '../../uidriver/webdriver/chrome/capabilities/iphone_x'
 import { iphone_5 } from '../../uidriver/webdriver/chrome/capabilities/iphone_5'
 import { ipad } from '../../uidriver/webdriver/chrome/capabilities/ipad'
+import { iphone_6 } from '../../uidriver/webdriver/chrome/capabilities/iphone_6'
+import { desktop } from '../../uidriver/webdriver/chrome/capabilities/desktop'
+import { BrowserName, PageLoadStrategy, View } from './i-caps-config'
+
+const browserVersions = {
+  chrome: '89.0',
+  edge: '87.0',
+  firefox: '84.0',
+  safari: undefined,
+}
 
 export const capsConfig = {
   chrome: {
-    browserName: 'chrome',
-    browserVersion: '83',
+    view: View.DESKTOP,
+    browserName: BrowserName.CHROME,
+    browserVersion: browserVersions.chrome,
     options: {
       arguments: ['user-data-dir=\\src\\config\\profiles'],
       headless: false,
-      windowSize: {},
+      windowSize: desktop,
       excludedSwitches: [],
       extensions: [],
       chromeBinaryPath: 'path/to/binary/file',
@@ -21,52 +32,61 @@ export const capsConfig = {
       chromeMinidumpPath: 'path',
     },
   },
-  chrome_headless: {
-    browserName: 'chrome',
-    browserVersion: '83',
+  iphone_5: {
+    view: View.MOBILE,
+    browserName: BrowserName.CHROME,
+    browserVersion: browserVersions.chrome,
+    pageLoadStrategy: PageLoadStrategy.EAGER,
     options: {
-      arguments: ['user-data-dir=\\src\\config\\profiles'],
-      headless: true,
-      windowSize: {},
-      excludedSwitches: [],
-      extensions: [],
-      chromeBinaryPath: '',
-      detachDriver: false,
-      userPreferences: 'path/to/preferences/file',
-      perfLoggingPrefs: {},
-      localState: 'path/to/preferences/file',
-      chromeLogFile: 'path/to/log/file',
-      chromeMinidumpPath: 'path',
-      mobileEmulation: iphone_x.deviceName,
+      mobileEmulation: iphone_5,
     },
   },
-  chrome_iphone5: {
-    browserName: 'chrome',
-    browserVersion: '83',
-    pageLoadStrategy: 'EAGER',
+  iphone_6: {
+    view: View.MOBILE,
+    browserName: BrowserName.CHROME,
+    browserVersion: browserVersions.chrome,
+    pageLoadStrategy: PageLoadStrategy.EAGER,
     options: {
-      mobileEmulation: iphone_5.deviceName,
+      mobileEmulation: iphone_6,
     },
   },
-  chrome_ipad: {
-    browserName: 'chrome',
-    browserVersion: '83',
+  iphone_X: {
+    view: View.MOBILE,
+    browserName: BrowserName.CHROME,
+    browserVersion: browserVersions.chrome,
     options: {
-      mobileEmulation: ipad.deviceName,
+      mobileEmulation: iphone_x,
+    },
+  },
+  ipad: {
+    view: View.TABLET,
+    browserName: BrowserName.CHROME,
+    browserVersion: browserVersions.chrome,
+    options: {
+      mobileEmulation: ipad,
     },
   },
   edge: {
-    browserName: 'edge',
+    view: View.DESKTOP,
+    browserName: BrowserName.EDGE,
+    browserVersion: browserVersions.edge,
     options: {
       edgeChromium: true,
+      windowSize: desktop,
     },
   },
   firefox: {
-    browserName: 'firefox',
-    browserVersion: '78',
-    options: {},
+    view: View.DESKTOP,
+    browserName: BrowserName.FIREFOX,
+    browserVersion: browserVersions.firefox,
+    options: {
+      windowSize: desktop,
+    },
   },
   safari: {
-    browserName: 'safari',
+    view: View.DESKTOP,
+    browserName: BrowserName.SAFARI,
+    browserVersion: browserVersions.safari,
+    options: {},
   },
 }

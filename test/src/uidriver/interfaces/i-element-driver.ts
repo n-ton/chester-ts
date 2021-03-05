@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import { WebElement } from 'selenium-webdriver'
 import { IKey } from 'selenium-webdriver/lib/input'
+import { ILocatable } from '../../interfaces/i-locatable'
 
 export interface IElementDriver {
   findElement(element: ILocatable): Promise<WebElement>
@@ -22,16 +23,13 @@ export interface IElementDriver {
   clickOnElement(element: ILocatable): Promise<void>
   contextClickOnElement(element: ILocatable): Promise<void>
   clickOnElementWithKeyPressed(element: ILocatable, key: IKey): Promise<void>
-  getAttributeValueOfElement(
-    element: ILocatable,
-    attribute: string
-  ): Promise<string>
-  setAttributeValueOfElement(
+  getAttributeValue(element: ILocatable, attribute: string): Promise<string>
+  setAttributeValue(
     element: ILocatable,
     attribute: string,
     value: string
   ): Promise<void>
-  getCssValueOfElement(element: ILocatable, css: string): Promise<string>
+  getCssValue(element: ILocatable, css: string): Promise<string>
   /**
    * Get the full inner text of this element, including hidden text and text from sub-elements, without any leading or trailing whitespace.
    * @param element

@@ -6,74 +6,50 @@ import {
   WebDriver,
   WebElementPromise,
   IRectangle,
-  error,
 } from 'selenium-webdriver'
 import { IKey } from 'selenium-webdriver/lib/input'
+import { isNumber } from 'lodash'
 import { IElementDriver } from '../interfaces/i-element-driver'
 import { FactoryProvider } from '../factory-provider'
-import { WdActionsChain } from '../webdriver/wd-actions-chain'
+import { WdActionsChain } from './wd-actions-chain'
+import { baseConfig } from '../../config/base-config'
+import { ILocatable } from '../../interfaces/i-locatable'
+import ReporterFactory from '../../reporting/reporter-factory'
+import IReporter from '../../reporting/i-reporter'
+import { WdWaitingDriver } from './wd-waiting-driver'
 
 export class WdElementDriver implements IElementDriver {
+  private reporter: IReporter = ReporterFactory.getReporter(
+    WdElementDriver.name
+  )
+
+  private wdWaitingDriver: WdWaitingDriver = FactoryProvider.getWebDriverFactory().getWaitingDriver()
+
   async findElement(element: ILocatable): Promise<WebElement> {
-    const driver: WebDriver = FactoryProvider.getWebDriverFactory().getDriver()
-    let locator: any = element.getLocator()
+    const driver: WebDriver = await FactoryProvider.getWebDriverFactory().getDriver()
 
-    console.info(
-      `Searching for element '${element.getLoggableName()}' in context '${element.getLoggableContext()}'`
+    this.reporter.debug('Finding for element', `${element.getLoggableName()}`)
+
+    return await this.webElementPromiseCallback(
+      element,
+      driver.findElement(By.xpath(element.getFullLocator()))
     )
-
-    if (!element.useContextLookup()) {
-      return await this.webElementPromiseCallback(
-        element,
-        driver.findElement(By.xpath(locator))
-      )
-    } else {
-      const elements: Array<ILocatable> = element.getLookupContext(true)
-
-      if (elements.length !== 0) {
-        let index: number = 0
-        let contextElementPromise: WebElementPromise
-        let elementPromise: WebElementPromise
-
-        let context: any = elements[0]
-        contextElementPromise = driver.findElement(
-          By.xpath(context.getLocator())
-        )
-        await this.webElementPromiseCallback(context, contextElementPromise)
-
-        while (index < elements.length - 1) {
-          context = elements[++index]
-          elementPromise = contextElementPromise.findElement(
-            By.xpath(context.getLocator())
-          )
-          await this.webElementPromiseCallback(context, elementPromise)
-          contextElementPromise = elementPromise
-        }
-
-        return await this.webElementPromiseCallback(
-          element,
-          contextElementPromise.findElement(By.xpath(locator))
-        )
-      } else {
-        return await this.webElementPromiseCallback(
-          element,
-          driver.findElement(By.xpath(locator))
-        )
-      }
-    }
   }
 
-  private webElementPromiseCallback(
+  public webElementPromiseCallback(
     element: ILocatable,
     webElementPromise: WebElementPromise
   ): WebElementPromise {
     webElementPromise
       .then(() => {
-        console.info(`OK: Found element '${element.getLoggableName()}'`)
+        this.reporter.debug('Element found', `${element.getLoggableName()}`)
       })
-      .catch((e) => {
-        console.warn(`WARN: Element '${element.getLoggableName()}' not found`)
-        console.warn(e.message)
+      .catch((e: Error) => {
+        this.reporter.warn(
+          'Element not found',
+          `${element.getLoggableName()}`,
+          e.name + ': ' + e.message
+        )
       })
     return webElementPromise
   }
@@ -87,6 +63,7 @@ export class WdElementDriver implements IElementDriver {
     ...keysToSend: Array<string | number | Promise<string | number>>
   ): Promise<void> {
     const webElement: WebElement = await this.findElement(element)
+    await this.scrollToElement(element)
     await this.highlightElement(element)
     await webElement.sendKeys(...keysToSend)
     await this.unHighlightElement(element)
@@ -94,41 +71,99 @@ export class WdElementDriver implements IElementDriver {
 
   async getText(element: ILocatable): Promise<string> {
     const webElement: WebElement = await this.findElement(element)
+    await this.scrollToElement(element)
     await this.highlightElement(element)
+    this.reporter.info('Getting text in', `${element.getLoggableName()}`)
     let text: string = await webElement.getText()
+    this.reporter.info('Text in', `${element.getLoggableName()}`, `${text}`)
     await this.unHighlightElement(element)
     return text
   }
 
-  async isElementDisplayed(element: ILocatable): Promise<boolean> {
-    try {
-      const webElement = await this.findElement(element)
-      await this.highlightElement(element)
-      const state: boolean = await webElement.isDisplayed()
-      await this.unHighlightElement(element)
-      return state
-    } catch (e) {
-      console.warn(e.message)
-      if (e instanceof error.NoSuchElementError) {
-        return false
-      } else {
-        throw e
-      }
+  async isStale(element: ILocatable, shouldWait?: boolean): Promise<boolean> {
+    let timeout: number = baseConfig.timeouts.implicit
+    if (shouldWait) {
+      timeout = baseConfig.waitUntilCondition
+    }
+    const state: Boolean | void = await this.wdWaitingDriver.waitUntilElementIsStale(
+      element,
+      timeout
+    )
+    if (state) {
+      this.reporter.info('Element is stale', `${element.getLoggableName()}`)
+      return true
+    } else {
+      this.reporter.info('Element in DOM', `${element.getLoggableName()}`)
+      return false
     }
   }
 
+  async isElementDisplayed(
+    element: ILocatable,
+    shouldWait?: boolean | number,
+    scrollAndHighlight?: boolean
+  ): Promise<boolean> {
+    let timeout: number = baseConfig.timeouts.implicit
+    if (isNumber(shouldWait)) {
+      timeout = shouldWait
+    } else if (shouldWait) {
+      timeout = baseConfig.waitUntilCondition
+    }
+
+    let webElement: boolean | WebElement
+    webElement = await this.wdWaitingDriver.waitUntilElementIsLocated(
+      element,
+      timeout
+    )
+
+    let state: boolean = false
+    if (webElement instanceof WebElement) {
+      if (scrollAndHighlight) {
+        await this.scrollToElement(element)
+        await this.highlightElement(element)
+      }
+
+      webElement = await this.wdWaitingDriver.waitUntilElementIsVisible(
+        element,
+        timeout
+      )
+
+      if (webElement instanceof WebElement) {
+        state = await webElement.isDisplayed()
+      }
+      await this.unHighlightElement(element)
+
+      if (state) {
+        this.reporter.info(
+          'Element is displayed',
+          `${element.getLoggableName()}`
+        )
+      } else {
+        this.reporter.info(
+          'Element is not displayed',
+          `${element.getLoggableName()}`
+        )
+      }
+    }
+    return state
+  }
+
   async clickOnElement(element: ILocatable): Promise<void> {
-    const webElement: WebElement = await this.findElement(element)
+    await this.scrollToElement(element)
     await this.highlightElement(element)
-    console.log(`Click on element ${element.getLocator()}`)
     await this.unHighlightElement(element)
-    await webElement.click()
+    this.reporter.info('Click on element', `${element.getLoggableName()}`)
+    try {
+      await (await this.findElement(element)).click()
+    } catch (e) {
+      throw new Error(
+        `Exception on click on element '${element.getLoggableName()}: '` + e
+      )
+    }
   }
 
   async contextClickOnElement(element: ILocatable): Promise<void> {
-    await FactoryProvider.getWebDriverFactory()
-      .getWaitingDriver()
-      .waitUntilElementIsClickable(element)
+    await this.wdWaitingDriver.waitUntilElementIsClickable(element)
 
     await new WdActionsChain()
       .contextClick(element)
@@ -139,9 +174,7 @@ export class WdElementDriver implements IElementDriver {
     element: ILocatable,
     key: IKey
   ): Promise<void> {
-    await FactoryProvider.getWebDriverFactory()
-      .getWaitingDriver()
-      .waitUntilElementIsClickable(element)
+    await this.wdWaitingDriver.waitUntilElementIsClickable(element)
 
     await new WdActionsChain()
       .keyDown(key.toString())
@@ -157,7 +190,7 @@ export class WdElementDriver implements IElementDriver {
   async getFullText(element: ILocatable): Promise<string> {
     return await FactoryProvider.getWebDriverFactory()
       .getElementDriver()
-      .getAttributeValueOfElement(element, 'textContent')
+      .getAttributeValue(element, 'textContent')
   }
 
   async isElementEnabled(element: ILocatable): Promise<boolean> {
@@ -170,7 +203,13 @@ export class WdElementDriver implements IElementDriver {
   }
 
   async scrollToElement(element: ILocatable): Promise<void> {
-    await this.executeScript('arguments[0].scrollIntoView(false)', element)
+    this.reporter.debug('Scrolling to element', `${element.getLoggableName()}`)
+    await this.executeScript(
+      `arguments[0].scrollIntoView(${JSON.stringify(
+        baseConfig.debugConfig.scrollIntoView.options
+      )})`,
+      element
+    )
   }
 
   async takeElementScreenshot(element: ILocatable): Promise<string> {
@@ -178,14 +217,26 @@ export class WdElementDriver implements IElementDriver {
   }
 
   async highlightElement(element: ILocatable): Promise<void> {
-    await this.executeScript(
-      "arguments[0].style.border='5px solid red';",
-      element
-    )
+    if (baseConfig.debugConfig.highlight.enable) {
+      await (await FactoryProvider.getWebDriverFactory().getDriver()).sleep(
+        baseConfig.debugConfig.highlight.delay
+      )
+
+      await this.executeScript(
+        `arguments[0].style.border = '${baseConfig.debugConfig.highlight.styleBorder}'; `,
+        element
+      )
+    }
   }
 
   async unHighlightElement(element: ILocatable): Promise<void> {
-    await this.executeScript("arguments[0].style.border='';", element)
+    if (baseConfig.debugConfig.highlight.enable) {
+      await (await FactoryProvider.getWebDriverFactory().getDriver()).sleep(
+        baseConfig.debugConfig.highlight.delay
+      )
+
+      await this.executeScript("arguments[0].style.border='';", element)
+    }
   }
 
   async addElementDebugInfo(
@@ -218,14 +269,14 @@ export class WdElementDriver implements IElementDriver {
     await this.executeScript(script, element, rect.x, rect.y, info, tooltip)
   }
 
-  async getAttributeValueOfElement(
+  async getAttributeValue(
     element: ILocatable,
     attribute: string
   ): Promise<string> {
     return (await this.findElement(element)).getAttribute(attribute)
   }
 
-  async setAttributeValueOfElement(
+  async setAttributeValue(
     element: ILocatable,
     attribute: string,
     value: string
@@ -234,35 +285,44 @@ export class WdElementDriver implements IElementDriver {
     await this.executeScript(script, element)
   }
 
-  async getCssValueOfElement(
-    element: ILocatable,
-    css: string
-  ): Promise<string> {
+  async getCssValue(element: ILocatable, css: string): Promise<string> {
     const webElement: WebElement = await this.findElement(element)
     await this.highlightElement(element)
-    const cssValue: Promise<string> = webElement.getCssValue(css)
+    this.reporter.info(
+      'Getting CSS value',
+      `${element.getLoggableName()}`,
+      `${css}`
+    )
+    const cssValue: string = await webElement.getCssValue(css)
+    this.reporter.info(
+      'CSS value',
+      `${element.getLoggableName()}`,
+      `${cssValue}`
+    )
     await this.unHighlightElement(element)
     return cssValue
   }
 
-  async executeScript(
+  async executeScript<T>(
     script: string,
     element?: ILocatable,
     ...args: any[]
-  ): Promise<WebElement> {
+  ): Promise<T> {
     if (element !== undefined) {
       let webElement: WebElement = await this.findElement(element)
-      console.log(
-        `Executing script '${script}' on '${element.getLoggableName()}'`
+      this.reporter.debug(
+        'Executing script',
+        `${script}`,
+        `element: ${element.getLoggableName()}`
       )
-      return await FactoryProvider.getWebDriverFactory()
-        .getDriver()
-        .executeScript(script, webElement, ...args)
+      return await (
+        await FactoryProvider.getWebDriverFactory().getDriver()
+      ).executeScript(script, webElement, ...args)
     } else {
-      console.log(`Executing script '${script}'`)
-      return await FactoryProvider.getWebDriverFactory()
-        .getDriver()
-        .executeScript(script, ...args)
+      this.reporter.debug('Executing script', `${script}`)
+      return await (
+        await FactoryProvider.getWebDriverFactory().getDriver()
+      ).executeScript(script, ...args)
     }
   }
 

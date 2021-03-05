@@ -8,6 +8,7 @@ export default class SelenoidConfigReader implements IConfigReader {
 
     capabilities.set('enableVNC', config.enableVNC)
     capabilities.set('enableVideo', config.enableVideo)
+    capabilities.set('enableLog', config.enableLog)
     capabilities.set('screenResolution', config.screenResolution)
 
     return capabilities
