@@ -1,6 +1,6 @@
 import { IPageDriver } from './i-page-driver'
 import { IElementDriver } from './i-element-driver'
-import { IWaitingDriver } from './i-waiting-driver'
+import { IWaitDriver } from './i-wait-driver'
 import { IElementsDriver } from './i-elements-driver'
 
 export interface IDriverFactory {
@@ -8,7 +8,8 @@ export interface IDriverFactory {
   isDriverStarted(): boolean
   isBrowserAlive(): Promise<boolean | undefined>
   quitDriver(): Promise<void>
-  getCurrentWindowHandle(): Promise<string | undefined>
+  getCurrentWindowHandle(): Promise<string>
+  getAllWindowHandles(): Promise<string[]>
   closeWindow(): Promise<void>
   getCurrentSessionId(): Promise<string | undefined>
   maximizeWindow(): Promise<void>
@@ -18,5 +19,5 @@ export interface IDriverFactory {
   getPageDriver(): IPageDriver
   getElementDriver(): IElementDriver
   getElementsDriver(): IElementsDriver
-  getWaitingDriver(): IWaitingDriver
+  getWaitDriver(): IWaitDriver
 }

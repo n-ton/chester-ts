@@ -1,22 +1,19 @@
 import { Key } from 'selenium-webdriver'
-import { FactoryProvider } from "../src/uidriver/factory-provider";
-import TextBox from "../src/html/elements/textbox";
 import { expect } from "chai";
-import AbstractContainer from "../src/html/containers/abstract-container";
+import { DriversFactory } from '../src/uidriver/drivers-factory';
+import TextBox from '../src/html/elements/textbox';
 
 (async function run() {
   try {
 
-    await FactoryProvider.getWebDriverFactory().getPageDriver().goToUrl('http://www.google.com/ncr');
+    await DriversFactory.pageDriver().goToUrl('http://www.google.com/ncr');
 
-    let container: AbstractContainer = new AbstractContainer();
-    let textBox: TextBox = new TextBox("//*[@name='q']", container);
+    let textBox: TextBox = new TextBox("//*[@name='q']");
 
     await textBox.changeValue('webdriver', Key.RETURN);
-    // await FactoryProvider.getWebDriverFactory().createWaitingDriver().waitUntilTitleIs('webdriver - Google Search', 1000);
-    expect(await FactoryProvider.getWebDriverFactory().getPageDriver().getTitle()).is.equal('webdriver - Google Search');
+    expect(await DriversFactory.pageDriver().getTitle()).is.equal('webdriver - Google Search');
 
   } finally {
-    await FactoryProvider.getWebDriverFactory().quitDriver();
+    await DriversFactory.quitDriver();
   }
 })();

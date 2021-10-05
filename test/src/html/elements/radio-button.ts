@@ -1,33 +1,28 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { FactoryProvider } from '../../uidriver/factory-provider'
-import AbstractElement from './abstract-element'
-import IInteractiveElement from './interfaces/i-interactive-element'
+import { DriversFactory } from '../../uidriver/drivers-factory'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
 
-export default class RadioButton extends AbstractElement {
+export default class RadioButton extends AbstractElementsContainer {
   async isSelected(): Promise<boolean> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .isElementSelected(this)
+    return await DriversFactory.elementDriver().isElementSelected(this)
   }
 
-  async select(): Promise<IInteractiveElement> {
+  async select(): Promise<AbstractElementsContainer> {
     if (!(await this.isSelected())) {
-      this.performAction()
+      await this.performAction()
     }
     return this
   }
 
-  async deselect(): Promise<IInteractiveElement> {
+  async deselect(): Promise<AbstractElementsContainer> {
     if (await this.isSelected()) {
-      this.performAction()
+      await this.performAction()
     }
     return this
   }
 
   async readValue(): Promise<string> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .getAttributeValue(this, 'value')
+    return await DriversFactory.elementDriver().getAttributeValue(this, 'value')
   }
 
   async changeValue(value: any): Promise<void> {

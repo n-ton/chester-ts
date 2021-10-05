@@ -1,3 +1,3 @@
-import AbstractElement from './abstract-element'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
 
-export default class Text extends AbstractElement {}
+export default class Text extends AbstractElementsContainer {}

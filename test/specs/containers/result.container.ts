@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/quotes */
-import AbstractContainer from '../../src/html/containers/abstract-container'
-import IInteractiveContainer from '../../src/html/containers/interfaces/i-interactive-container'
-import Link from '../../src/html/elements/link'
-import Text from '../../src/html/elements/text'
 
-export class Result extends AbstractContainer {
+import AbstractElementsContainer from "../../src/html/containers/abstract-elements.container"
+import Link from "../../src/html/elements/link"
+import Text from "../../src/html/elements/text"
 
-    constructor(context: IInteractiveContainer) {
-        super(".//*[@href]", undefined, context)
+export class Result extends AbstractElementsContainer {
+
+    constructor(context: AbstractElementsContainer) {
+        super(".//*[@href]", context)
     }
 
     link: Link = new Link(".", this)

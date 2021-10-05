@@ -1,13 +1,11 @@
-import { FactoryProvider } from '../../uidriver/factory-provider'
-import AbstractElement from './abstract-element'
+import { DriversFactory } from '../../uidriver/drivers-factory'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
+import IEditable from '../interfaces/i-editable'
 
-export default class TextBox extends AbstractElement {
+export default class TextBox extends AbstractElementsContainer
+  implements IEditable {
   async changeValue(...keysToSend: Array<string>) {
-    await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .clearElement(this)
-    await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .sendKeysToElement(this, ...keysToSend)
+    await DriversFactory.elementDriver().clearElement(this)
+    await DriversFactory.elementDriver().sendKeysToElement(this, ...keysToSend)
   }
 }

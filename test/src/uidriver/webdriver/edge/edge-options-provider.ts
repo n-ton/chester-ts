@@ -1,8 +1,8 @@
 import { Capabilities } from 'selenium-webdriver'
 import * as edge from 'selenium-webdriver/edge'
+import { ICapsConfig } from '../../../config/driver/i-capabilities-config'
+import CapsConfigReader from '../../../config/driver/readers/capabilities-config-reader'
 import IOptionsProvider from '../interfaces/i-options-provider'
-import CapsConfigReader from '../../../config/driver/caps-config-reader'
-import { ICapsConfig } from '../../../config/driver/i-caps-config'
 
 export class EdgeOptionsProvider implements IOptionsProvider {
   getOptions(browserConfig: ICapsConfig): Capabilities {

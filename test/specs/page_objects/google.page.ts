@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/quotes */
-import { AbstractPage } from '../../src/html/containers/abstract-page'
-import Link from '../../src/html/elements/link'
 import { Footer } from '../containers/footer.container'
 import { Search } from '../containers/search.container'
 import { Results } from '../containers/results.container'
 import { baseConfig } from '../../src/config/base-config'
+import { AbstractPage } from '../../src/html/abstract-page'
 
 class GooglePage extends AbstractPage {
   static URL = `${baseConfig.envConfig.url}`
@@ -13,11 +12,11 @@ class GooglePage extends AbstractPage {
     super(GooglePage.URL, 'Google')
   }
 
-  search: Search = new Search(this)
+  search: Search = new Search()
 
-  results: Results = new Results(this)
+  results: Results = new Results()
 
-  footer: Footer = new Footer(this)
+  footer: Footer = new Footer()
 
 }
 

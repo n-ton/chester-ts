@@ -1,30 +1,42 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { FactoryProvider } from '../../uidriver/factory-provider'
+import { DriversFactory } from '../../uidriver/drivers-factory'
+import HttpUtils from '../../utils/http-utils'
 import { Attributes } from '../attributes'
-import AbstractElement from './abstract-element'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
 
-export default class Image extends AbstractElement {
+export default class Image extends AbstractElementsContainer {
   async getSrc(): Promise<string> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .getAttributeValue(this, Attributes.SRC)
+    return await DriversFactory.elementDriver().getAttributeValue(
+      this,
+      Attributes.SRC
+    )
   }
 
   async getAlt(): Promise<string> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .getAttributeValue(this, Attributes.ALT)
+    return await DriversFactory.elementDriver().getAttributeValue(
+      this,
+      Attributes.ALT
+    )
   }
 
   async getWidth(): Promise<string> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .getAttributeValue(this, Attributes.WIDTH)
+    return await DriversFactory.elementDriver().getAttributeValue(
+      this,
+      Attributes.WIDTH
+    )
   }
 
   async getHeight(): Promise<string> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .getAttributeValue(this, Attributes.HEIGHT)
+    return await DriversFactory.elementDriver().getAttributeValue(
+      this,
+      Attributes.HEIGHT
+    )
+  }
+
+  async isDisplayed(shouldWait?: boolean): Promise<boolean> {
+    return (
+      (await HttpUtils.headRequest(await this.getSrc())) === 200 &&
+      (await super.isDisplayed(shouldWait))
+    )
   }
 }

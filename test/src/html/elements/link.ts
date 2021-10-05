@@ -1,15 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { FactoryProvider } from '../../uidriver/factory-provider'
-import AbstractElement from './abstract-element'
+import { DriversFactory } from '../../uidriver/drivers-factory'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
 
-export default class Link extends AbstractElement {
+export default class Link extends AbstractElementsContainer {
   async getHref(): Promise<string> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .getAttributeValue(this, 'href')
-  }
-
-  changeValue(): Promise<void> {
-    throw new Error('Unsupported operation exception')
+    return await DriversFactory.elementDriver().getAttributeValue(this, 'href')
   }
 }

@@ -1,11 +1,13 @@
 import { Builder, Capabilities, ThenableWebDriver } from 'selenium-webdriver'
 import * as chrome from 'selenium-webdriver/chrome'
+import { ISelenoidConfig } from '../../config/driver/i-selenoid-config'
 
 export default class WebDriverBuilder {
   private builder: Builder = new Builder()
 
-  usingServer(url: string | undefined): WebDriverBuilder {
-    if (url !== undefined) this.builder.usingServer(url)
+  usingServer(config: ISelenoidConfig | undefined): WebDriverBuilder {
+    if (config !== undefined)
+      this.builder.usingServer(config.url + ':' + config.port + config.path)
     return this
   }
 

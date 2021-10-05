@@ -14,7 +14,7 @@ const allParams = CliUtils.getParamsMap()
 const outDir: string = './test/target'
 const specsDir = function () {
   const path = CliUtils.getParam(CliUtils.SPECS_DIR_PARAM)
-  return isUndefined(path) ? `${outDir}/test/specs` : path
+  return isUndefined(path) ? `${outDir}/specs` : path
 }
 const logLevel = function () {
   const level = CliUtils.getParam(CliUtils.LOG_LEVEL_PARAM)
@@ -23,6 +23,9 @@ const logLevel = function () {
 const regexp = function (): string {
   const regexp = CliUtils.getParam(CliUtils.GREP)
   return isUndefined(regexp) ? '' : regexp
+}
+const driver = function (): string {
+  return 'webdriver'
 }
 const dataDir = `${outDir}/data`
 const logsDir = `${dataDir}/logs`
@@ -49,4 +52,5 @@ export const allConfigs = {
   allureResults,
   environmentProperties,
   regexp,
+  driver,
 }

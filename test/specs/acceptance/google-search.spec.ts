@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import { expect } from 'chai'
 import { afterEach } from 'mocha'
-import { FactoryProvider } from '../../src/uidriver/factory-provider'
 import GooglePage from '../page_objects/google.page'
-import ClickAction from '../../src/html/elements/actions/click-action'
 import { Key } from 'selenium-webdriver/lib/input'
+import { DriversFactory } from '../../src/uidriver/drivers-factory'
 
 describe('Google search', () => {
   it('AC1: Search github/n-ton', async () => {
@@ -21,6 +20,6 @@ describe('Google search', () => {
   })
 
   afterEach('Quit browser', async function () {
-    await FactoryProvider.getWebDriverFactory().quitDriver(this)
+    await DriversFactory.quitDriver(this)
   })
 })

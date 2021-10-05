@@ -2,8 +2,8 @@ import * as chrome from 'selenium-webdriver/chrome'
 import { Capabilities } from 'selenium-webdriver'
 import { isUndefined } from 'lodash'
 import IOptionsProvider from '../interfaces/i-options-provider'
-import CapsConfigReader from '../../../config/driver/caps-config-reader'
-import { ICapsConfig } from '../../../config/driver/i-caps-config'
+import { ICapsConfig } from '../../../config/driver/i-capabilities-config'
+import CapsConfigReader from '../../../config/driver/readers/capabilities-config-reader'
 
 export default class ChromeOptionsProvider implements IOptionsProvider {
   getOptions(capsConfig: ICapsConfig): Capabilities {

@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/quotes */
-import AbstractContainer from '../../src/html/containers/abstract-container'
-import IInteractiveContainer from '../../src/html/containers/interfaces/i-interactive-container'
+import AbstractElementsContainer from '../../src/html/containers/abstract-elements.container'
 import { Result } from './result.container'
 
-export class Results extends AbstractContainer {
+export class Results extends AbstractElementsContainer {
 
-  constructor(context: IInteractiveContainer) {
-    super(".//*[@id='rso']", undefined, context)
+  constructor() {
+    super(".//*[@id='rso']")
   }
 
   result: Result = new Result(this)
