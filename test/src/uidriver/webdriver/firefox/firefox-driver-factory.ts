@@ -1,11 +1,11 @@
 import { WebDriver, Capabilities } from 'selenium-webdriver'
 import { WebDriverFactory } from '../wd-factory'
-import { ICapsConfig } from '../../../config/driver/i-caps-config'
-import SelenoidConfigReader from '../../../config/driver/selenoid/selenoid-config-reader'
 import ReporterFactory from '../../../reporting/reporter-factory'
 import { FirefoxDriverCreator } from './firefox-driver-creator'
 import { FirefoxCapabilitiesProvider } from './firefox-capabilities-provider'
 import { FirefoxOptionsProvider } from './firefox-options-provider'
+import { ICapsConfig } from '../../../config/driver/i-capabilities-config'
+import SelenoidConfigReader from '../../../config/driver/readers/selenoid-config-reader'
 
 export class FirefoxDriverFactory extends WebDriverFactory {
   constructor() {
@@ -13,7 +13,7 @@ export class FirefoxDriverFactory extends WebDriverFactory {
     this.reporter = ReporterFactory.getReporter(FirefoxDriverFactory.name)
   }
 
-  createDriver(browserConfig: ICapsConfig): WebDriver {
+  async createDriver(browserConfig: ICapsConfig): Promise<WebDriver> {
     let selenoidCapabilities: Capabilities = new Capabilities()
     if (this.selenoidConfig !== undefined) {
       selenoidCapabilities = new SelenoidConfigReader().readData(

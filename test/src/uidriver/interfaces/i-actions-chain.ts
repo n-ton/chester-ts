@@ -1,4 +1,4 @@
-import { ILocatable } from '../../interfaces/i-locatable'
+import ILocatable from '../../html/interfaces/i-locatable'
 
 export interface IActionsChain {
   contextClick(element: ILocatable): Promise<IActionsChain>
@@ -10,4 +10,5 @@ export interface IActionsChain {
   press(element: ILocatable): Promise<IActionsChain>
   release(): Promise<IActionsChain>
   pause(duration: number): Promise<IActionsChain>
+  mouseMove(element: ILocatable): Promise<IActionsChain>
 }

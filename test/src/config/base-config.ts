@@ -5,7 +5,12 @@ import { allConfigs } from './all-configs'
 
 function isHeadless(): boolean {
   const headless = CliUtils.getParam(CliUtils.HEADLESS_PARAM)
-  return isUndefined(headless) ? false : headless === 'true'
+
+  return isUndefined(allConfigs.capsConfig.options?.headless)
+    ? isUndefined(headless)
+      ? false
+      : headless === 'true'
+    : allConfigs.capsConfig.options?.headless === true
 }
 
 function retries(): number {
@@ -23,6 +28,7 @@ function collectArtifacts(): boolean {
 }
 
 export const baseConfig = {
+  driver: 'webdriver',
   env: allConfigs.env,
   envConfig: allConfigs.envConfig,
   view: allConfigs.capsConfig.view,
@@ -30,7 +36,7 @@ export const baseConfig = {
   waitUntilCondition: 15000,
   timeouts: {
     script: 10000,
-    pageLoad: 30000,
+    pageLoad: 60000,
     implicit: 1000,
   },
   retries: retries(),

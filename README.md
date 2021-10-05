@@ -1,2 +1,2 @@
 # chester-ts
-WebDriver automation framework on typescript
+UI automation framework based on Selenium WebDriver written on typescript

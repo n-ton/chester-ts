@@ -1,17 +1,16 @@
 import { WebDriver, Capabilities, ITimeouts } from 'selenium-webdriver'
-import { error } from 'selenium-webdriver'
+import { error } from 'selenium-webdriver/index'
 import { isNull, isUndefined } from 'lodash'
 import { IDriverFactory } from '../interfaces/i-driver-factory'
 import { baseConfig } from '../../config/base-config'
-import { ICapsConfig } from '../../config/driver/i-caps-config'
-import { ISelenoidConfig } from '../../config/driver/selenoid/i-selenoid-config'
 import { allConfigs } from '../../config/all-configs'
 import ReporterFactory from '../../reporting/reporter-factory'
 import IReporter from '../../reporting/i-reporter'
-import { FactoryProvider } from '../factory-provider'
+import { ICapsConfig } from '../../config/driver/i-capabilities-config'
+import { ISelenoidConfig } from '../../config/driver/i-selenoid-config'
 import { WdPageDriver } from './wd-page-driver'
 import { WdElementDriver } from './wd-element-driver'
-import { WdWaitingDriver } from './wd-waiting-driver'
+import { WdWaitDriver } from './wd-wait-driver'
 import WdElementsDriver from './wd-elements-driver'
 import { WdManager } from './wd-manager'
 
@@ -24,7 +23,8 @@ export abstract class WebDriverFactory implements IDriverFactory {
   private pageDriver: WdPageDriver | undefined
   private elementDriver: WdElementDriver | undefined
   private elementsDriver: WdElementsDriver | undefined
-  private waitingDriver: WdWaitingDriver | undefined
+  private waitingDriver: WdWaitDriver | undefined
+  private driverManager: WdManager | undefined
   private namedDrivers: Map<string, WebDriver> = new Map()
   private currentSession: string = 'default_driver_session'
   private capsConfig: ICapsConfig = allConfigs.capsConfig
@@ -34,19 +34,25 @@ export abstract class WebDriverFactory implements IDriverFactory {
   async getDriver(): Promise<WebDriver> {
     if (isUndefined(this.driver) || isNull(this.driver === null)) {
       this.reporter.debug('Starting driver.')
-      this.driver = this.createDriver(this.capsConfig)
-      await this.driver.getCapabilities().then((result) => {
-        this.reporter.debug(result)
-      })
+      this.driver = await this.createDriver(this.capsConfig)
+      this.reporter.debug(await this.driver.getCapabilities())
       this.namedDrivers.set(this.currentSession, this.driver)
       await this.setWaitingTimeout()
+      if (
+        isUndefined(allConfigs.capsConfig.options?.maximize) ||
+        allConfigs.capsConfig.options?.maximize === true
+      ) {
+        await this.driver.manage().window().maximize()
+      }
     } else {
       this.reporter.debug('Getting driver.')
     }
     return this.driver
   }
 
-  protected abstract createDriver(browserConfig: ICapsConfig): WebDriver
+  protected abstract createDriver(
+    browserConfig: ICapsConfig
+  ): Promise<WebDriver>
 
   isDriverStarted(): boolean {
     return !isNull(this.driver) && !isUndefined(this.driver)
@@ -67,7 +73,6 @@ export abstract class WebDriverFactory implements IDriverFactory {
         awh = undefined
         this.driver = undefined
       }
-      this.reporter.info('All window handles', `${awh}`)
       return !isUndefined(awh) && !!awh.length
     } else {
       this.reporter.warn('Driver is not started.')
@@ -77,25 +82,29 @@ export abstract class WebDriverFactory implements IDriverFactory {
   async quitDriver(context?: Mocha.Context): Promise<void> {
     if (this.isDriverStarted()) {
       const browserName = (await this.getCapabilities())?.getBrowserName()
+
       const sessionId = await this.getCurrentSessionId()
+      const title = context?.currentTest?.title + '_' + sessionId
 
       if (
-        context?.currentTest?.state === 'failed' ||
+        context?.currentTest?.state !== 'passed' ||
         baseConfig.collectArtifacts
       ) {
         try {
-          let title = context?.currentTest?.title + ' ' + new Date().getTime()
+          this.reporter.info('Collecting test artifacts.')
+          const body = context?.currentTest?.body
+          if (!isUndefined(body)) this.reporter.attachTestBody(title, body)
 
-          this.reporter.info('Collecting logs.')
-          this.reporter.attachLogs(
-            title,
-            await WdManager.getAvailableLogsFormatted()
-          )
+          for (const type of await this.getDriverManager().getAvailableLogTypes()) {
+            this.reporter.attachLogs(
+              title + '_' + type + '.log',
+              await this.getDriverManager().getLogsFormatted(type)
+            )
+          }
+
           this.reporter.attachScreenshot(
             title,
-            await FactoryProvider.getWebDriverFactory()
-              .getPageDriver()
-              .takePageScreenshot()
+            await this.getPageDriver().takePageScreenshot()
           )
         } catch (error) {
           this.reporter.error('Collecting logs failed', error.message)
@@ -105,6 +114,11 @@ export abstract class WebDriverFactory implements IDriverFactory {
           this.reporter.info('Closing browser', `${browserName}`)
           this.driver = undefined
         }
+        // TODO selenoid video recording
+        // if (this.selenoidConfig !== undefined) {
+        //   const data: any = await HttpUtils.downloadBlob(`${this.selenoidConfig.url}:8080/video/${sessionId}.mp4`)
+        //   this.reporter.attachFile(title, data, 'video/webm')
+        // }
       } else {
         await this.driver?.quit()
         this.reporter.info('Quit current session', `${sessionId}`)
@@ -125,15 +139,31 @@ export abstract class WebDriverFactory implements IDriverFactory {
     }
   }
 
-  async getCurrentWindowHandle(): Promise<string | undefined> {
+  async getCurrentWindowHandle(): Promise<string> {
     if (await this.isBrowserAlive()) {
       let currentWindowHandle = await this.driver?.getWindowHandle()
       this.reporter.info('Current window', `${currentWindowHandle}`)
+      if (isUndefined(currentWindowHandle)) return ''
       return currentWindowHandle
     } else {
       this.reporter.warn(
         'Browser is not alive. There are no available windows.'
       )
+      return ''
+    }
+  }
+
+  async getAllWindowHandles(): Promise<string[]> {
+    if (await this.isBrowserAlive()) {
+      let windowHandles = await this.driver?.getAllWindowHandles()
+      this.reporter.info('All window handles', `${windowHandles}`)
+      if (isUndefined(windowHandles)) return []
+      else return windowHandles
+    } else {
+      this.reporter.warn(
+        'Browser is not alive. There are no available windows.'
+      )
+      return []
     }
   }
 
@@ -196,8 +226,8 @@ export abstract class WebDriverFactory implements IDriverFactory {
 
   async sleep(amount: number): Promise<void> {
     if (this.isDriverStarted()) {
-      this.reporter.info('Driver sleeping', amount)
-      this.driver?.sleep(amount)
+      this.reporter.debug('Driver sleeping', amount)
+      await this.driver?.sleep(amount)
     } else {
       this.reporter.warn('Driver is not started.')
     }
@@ -227,11 +257,19 @@ export abstract class WebDriverFactory implements IDriverFactory {
     }
   }
 
-  public getWaitingDriver(): WdWaitingDriver {
+  public getWaitDriver(): WdWaitDriver {
     if (isNull(this.waitingDriver) || isUndefined(this.waitingDriver)) {
-      return new WdWaitingDriver()
+      return new WdWaitDriver()
     } else {
       return this.waitingDriver
+    }
+  }
+
+  public getDriverManager(): WdManager {
+    if (isNull(this.driverManager) || isUndefined(this.driverManager)) {
+      return new WdManager()
+    } else {
+      return this.driverManager
     }
   }
 }

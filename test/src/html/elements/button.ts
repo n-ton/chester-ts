@@ -1,7 +1,3 @@
-import AbstractElement from './abstract-element'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
 
-export default class Button extends AbstractElement {
-  changeValue(value: any): Promise<void> {
-    throw new Error('Operation is not supported')
-  }
-}
+export default class Button extends AbstractElementsContainer {}

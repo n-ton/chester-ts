@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import { WebElement } from 'selenium-webdriver'
 import { IKey } from 'selenium-webdriver/lib/input'
-import { ILocatable } from '../../interfaces/i-locatable'
+import ILocatable from '../../html/interfaces/i-locatable'
 
 export interface IElementDriver {
   findElement(element: ILocatable): Promise<WebElement>
@@ -15,7 +15,11 @@ export interface IElementDriver {
    * @param element
    */
   getText(element: ILocatable): Promise<string>
-  isElementDisplayed(element: ILocatable): Promise<boolean>
+  isElementDisplayed(
+    element: ILocatable,
+    wait: boolean | number | undefined,
+    scrollTo?: boolean
+  ): Promise<boolean>
   /**
    * Simulates left click on element
    * @param element
@@ -41,9 +45,9 @@ export interface IElementDriver {
   takeElementScreenshot(element: ILocatable): Promise<string>
   highlightElement(element: ILocatable): Promise<void>
   unHighlightElement(element: ILocatable): Promise<void>
-  executeScript(
+  executeScript<T>(
     script: string,
-    element: ILocatable,
+    element: ILocatable | undefined,
     ...args: any[]
   ): Promise<WebElement>
   addElementDebugInfo(
@@ -53,4 +57,5 @@ export interface IElementDriver {
   ): Promise<void>
   removeElementDebugInfo(element: ILocatable): Promise<void>
   clickWithDelay(element: ILocatable): Promise<void>
+  isStale(element: ILocatable, shouldWait?: boolean): Promise<boolean>
 }

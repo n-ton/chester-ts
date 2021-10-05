@@ -1,26 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { FactoryProvider } from '../../uidriver/factory-provider'
-import AbstractElement from './abstract-element'
-import IInteractiveElement from './interfaces/i-interactive-element'
-import ISelectable from './interfaces/i-selectable'
+import { DriversFactory } from '../../uidriver/drivers-factory'
+import AbstractElementsContainer from '../containers/abstract-elements.container'
+import IEditable from '../interfaces/i-editable'
+import IInteractive from '../interfaces/i-interactive'
+import ISelectable from '../interfaces/i-selectable'
 
-export default class Checkbox extends AbstractElement implements ISelectable {
+export default class Checkbox extends AbstractElementsContainer
+  implements ISelectable, IEditable {
   async isSelected(): Promise<boolean> {
-    return await FactoryProvider.getWebDriverFactory()
-      .getElementDriver()
-      .isElementSelected(this)
+    return await DriversFactory.elementDriver().isElementSelected(this)
   }
 
-  async select(): Promise<IInteractiveElement> {
+  async select(): Promise<IInteractive> {
     if (!(await this.isSelected())) {
-      this.performAction()
+      await this.performAction()
     }
     return this
   }
 
-  async deselect(): Promise<IInteractiveElement> {
+  async deselect(): Promise<IInteractive> {
     if (await this.isSelected()) {
-      this.performAction()
+      await this.performAction()
     }
     return this
   }
@@ -29,7 +29,7 @@ export default class Checkbox extends AbstractElement implements ISelectable {
     return (await this.isSelected()).toString()
   }
 
-  async changeValue(value: any): Promise<void> {
+  async changeValue(value: Number | Boolean | String): Promise<void> {
     if (value instanceof Number) {
       if (value === 0) {
         await this.deselect()

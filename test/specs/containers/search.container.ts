@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/quotes */
-import AbstractContainer from '../../src/html/containers/abstract-container'
-import IInteractiveContainer from '../../src/html/containers/interfaces/i-interactive-container'
-import TextBox from '../../src/html/elements/textbox'
-import Button from '../../src/html/elements/button'
 
-export class Search extends AbstractContainer {
+import AbstractElementsContainer from "../../src/html/containers/abstract-elements.container"
+import Button from "../../src/html/elements/button"
+import TextBox from "../../src/html/elements/textbox"
 
-  constructor(context: IInteractiveContainer) {
-    super(".//form[@role='search']", undefined, context)
+export class Search extends AbstractElementsContainer {
+
+  constructor() {
+    super(".//form[@role='search']")
     this.addElement(this.input)
     this.addElement(this.searchBtn)
   }

@@ -1,4 +1,4 @@
-import { ILocatable } from '../../interfaces/i-locatable'
+import ILocatable from '../../html/interfaces/i-locatable'
 
 export interface ISelectElementDriver {
   selectByIndex(element: ILocatable, index: number): Promise<void>
