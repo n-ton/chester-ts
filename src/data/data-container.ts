@@ -9,6 +9,8 @@ export default class DataContainer {
 
   private static items: Map<string, any> = new Map<string, any>()
 
+  public static FILES_KEY = 'FILES'
+
   private static set(key: string, item: any): void {
     DataContainer.items.set(key, item)
   }

@@ -2,10 +2,10 @@ name: Test branch
 
 on:
   push:
-    branches:
-      - '*' # matches every branch
-      - '*/*' # matches every branch containing a single '/'
-      - '!master' # excludes master
+    # branches:
+      # - '*' # matches every branch
+      # - '*/*' # matches every branch containing a single '/'
+      # - '!master' # excludes master
 
   pull_request:
     types: [opened, synchronize]
