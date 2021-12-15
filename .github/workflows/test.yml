@@ -87,7 +87,7 @@ jobs:
         if: always()
         with:
           name: Allure report
-          path: ./test/target/allure-report
+          path: target/allure-report
 
       # - name: Deploy Allure report to GitHub Pages
       #   uses: peaceiris/actions-gh-pages@v2

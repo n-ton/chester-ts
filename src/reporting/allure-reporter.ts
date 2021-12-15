@@ -56,7 +56,7 @@ export class AllureReporter extends Log4jsReporter {
       fs.existsSync(allConfigs.allureResults) &&
       !fs.existsSync(allConfigs.environmentProperties)
     ) {
-      
+
       fs.appendFileSync(
         allConfigs.environmentProperties,
         `env=${allConfigs.env}\n`
@@ -83,16 +83,16 @@ export class AllureReporter extends Log4jsReporter {
           }
         )
       }
+      fs.appendFileSync(
+        allConfigs.environmentProperties,
+        `testGrep=${allConfigs.regexp()}\n`
+      )
+      fs.appendFileSync(
+        allConfigs.environmentProperties,
+        allConfigs.capsConfig.browserName !== BrowserName.EDGE
+          ? `headless=${baseConfig.headless}\n`
+          : 'headless=false\n'
+      )
     }
-    fs.appendFileSync(
-      allConfigs.environmentProperties,
-      `testGrep=${allConfigs.regexp()}\n`
-    )
-    fs.appendFileSync(
-      allConfigs.environmentProperties,
-      allConfigs.capsConfig.browserName !== BrowserName.EDGE
-        ? `headless=${baseConfig.headless}\n`
-        : 'headless=false\n'
-    )
   }
 }
