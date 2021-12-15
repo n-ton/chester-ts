@@ -1,4 +1,4 @@
-name: Test branch
+name: Test pull request
 
 on:
   # push:
@@ -75,9 +75,9 @@ jobs:
         id: allure-report
         if: always()
         with:
-          allure_results: ./test/target/allure-results
+          allure_results: target/allure-results
           gh_pages: gh-pages
-          allure_report: ./test/target/allure-report
+          allure_report: target/allure-report
           allure_history: allure-history
           github_run_num: ${{ github.run_number }}
           github_run_id: ${{ github.run_id }}

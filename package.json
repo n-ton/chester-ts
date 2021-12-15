@@ -35,7 +35,7 @@
     "test:runner-sql": "node target/src/runners/sequential-runner.js",
     "test:runner-prl": "node target/src/runners/parallel-runner.js",
     "test:sql": "yarn test:cc && yarn test:runner-sql --capsConfig iphone_5 --envConfig google --headless true --reporterConfig allure --debugConfig default --logLevel debug",
-    "test:prl": "yarn test:cc && yarn test:runner-prl --capsConfig iphone_5 --envConfig google --headless true --reporterConfig allure --debugConfig default --retries 1 --logLevel warn",
+    "test:prl": "yarn test:cc && yarn test:runner-prl --capsConfig iphone_5 --envConfig google --headless true --reporterConfig allure --debugConfig ci --retries 1 --logLevel debug",
     "allure:generate": "allure generate target/allure-results --clean -o target/allure-report",
     "allure:open": "yarn allure:generate && allure open ./test/target/allure-report"
   }
