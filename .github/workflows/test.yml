@@ -42,7 +42,6 @@ jobs:
         uses: n-ton4/selenoid-github-action@master
         id: start-selenoid
         continue-on-error: false
-        if: github.event_name == 'pull_request'
         with:
           version: 1.10.1
           args: -limit 15
@@ -51,23 +50,21 @@ jobs:
 
       - name: Check Selenoid has been started
         run: curl http://localhost:4444/status
-        if: github.event_name == 'pull_request'
 
       - name: Run Acceptance tests
         id: acceptance-tests
-        if: github.event_name == 'pull_request'
         run: yarn test:prl --specsDir target/test/specs/acceptance --grep '@ci'
 
       - name: Set up JDK
         uses: actions/setup-java@v1
         id: set-up-jdk
-        if: github.event_name == 'pull_request' && failure()
+        if: always()
         with:
           java-version: 1.8
 
       - name: Get Allure history
         uses: actions/checkout@v2
-        if: github.event_name == 'pull_request' && failure()
+        if: always()
         continue-on-error: true
         with:
           ref: gh-pages
@@ -76,7 +73,7 @@ jobs:
       - name: Generate Allure report
         uses: n-ton4/allure-report-action@master
         id: allure-report
-        if: github.event_name == 'pull_request' && failure()
+        if: always()
         with:
           allure_results: ./test/target/allure-results
           gh_pages: gh-pages
@@ -87,7 +84,7 @@ jobs:
 
       - name: Upload Allure report
         uses: actions/upload-artifact@master
-        if: github.event_name == 'pull_request' && failure()
+        if: always()
         with:
           name: Allure report
           path: ./test/target/allure-report
