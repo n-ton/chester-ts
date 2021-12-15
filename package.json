@@ -29,16 +29,14 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/eslint",
-    "test:clean": "cd test && rm -rfv target",
-    "test:compile": "cd test && tsc",
-    "test:debug": "node_modules/.bin/mocha test/target/sandbox/google_search_run.js --timeout 0",
+    "test:clean": "rm -rfv target",
+    "test:compile": "tsc",
     "test:cc": "yarn test:clean && yarn test:compile",
-    "test:runner-sql": "node test/target/src/runners/sequential-runner.js",
-    "test:runner-prl": "node test/target/src/runners/parallel-runner.js",
-    "test:sql": "yarn test:cc && yarn test:runner-sql --capsConfig iphone_5 --envConfig default --headless true --reporterConfig default --debugConfig default --logLevel debug",
-    "test:prl": "yarn test:cc && yarn test:runner-prl --capsConfig iphone_5 --envConfig default --headless true --reporterConfig allure --debugConfig default --retries 1 --logLevel warn",
-    "allure:generate": "allure generate ./test/target/allure-results --clean -o ./test/target/allure-report",
-    "allure:open": "yarn allure:generate && allure open ./test/target/allure-report",
-    "mocha": "node_modules/.bin/mocha"
+    "test:runner-sql": "node target/src/runners/sequential-runner.js",
+    "test:runner-prl": "node target/src/runners/parallel-runner.js",
+    "test:sql": "yarn test:cc && yarn test:runner-sql --capsConfig iphone_5 --envConfig google --headless true --reporterConfig allure --debugConfig default --logLevel debug",
+    "test:prl": "yarn test:cc && yarn test:runner-prl --capsConfig iphone_5 --envConfig google --headless true --reporterConfig allure --debugConfig default --retries 1 --logLevel warn",
+    "allure:generate": "allure generate target/allure-results --clean -o target/allure-report",
+    "allure:open": "yarn allure:generate && allure open ./test/target/allure-report"
   }
 }
