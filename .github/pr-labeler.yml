@@ -1,0 +1,5 @@
+feature: ['feature/*', 'feat/*']
+fix: fix/*
+bug: bug/*
+chore: chore/*
+test: ['ta/*', 'test/*']

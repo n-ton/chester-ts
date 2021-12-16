@@ -1,0 +1,99 @@
+name: Test pull request
+
+on:
+  # push:
+    # branches:
+      # - '*' # matches every branch
+      # - '*/*' # matches every branch containing a single '/'
+      # - '!master' # excludes master
+
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Restore node_modules from cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+            */*/node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          echo "" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_PACKAGES_TOKEN }}" >> .npmrc
+          yarn install --frozen-lockfile --ignore-scripts
+
+      - name: Start Selenoid
+        uses: n-ton4/selenoid-github-action@master
+        id: start-selenoid
+        continue-on-error: false
+        with:
+          version: 1.10.1
+          args: -limit 15
+          browsers: chrome:91.0;firefox:89.0
+          last-versions: 1
+
+      - name: Check Selenoid has been started
+        run: curl http://localhost:4444/status
+
+      - name: Run Acceptance tests
+        id: acceptance-tests
+        run: yarn test:prl --specsDir target/test/specs/acceptance --grep '@ci'
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        id: set-up-jdk
+        if: always()
+        with:
+          java-version: 1.8
+
+      - name: Get Allure history
+        uses: actions/checkout@v2
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate Allure report
+        uses: n-ton4/allure-report-action@master
+        id: allure-report
+        if: always()
+        with:
+          allure_results: target/allure-results
+          gh_pages: gh-pages
+          allure_report: target/allure-report
+          allure_history: allure-history
+          github_run_num: ${{ github.run_number }}
+          github_run_id: ${{ github.run_id }}
+
+      - name: Upload Allure report
+        uses: actions/upload-artifact@master
+        if: always()
+        with:
+          name: Allure report
+          path: target/allure-report
+
+      # - name: Deploy Allure report to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v2
+      #   if: github.event_name == 'pull_request' && failure()
+      #   continue-on-error: true
+      #   env:
+      #     PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     PUBLISH_BRANCH: gh-pages
+      #     PUBLISH_DIR: allure-history

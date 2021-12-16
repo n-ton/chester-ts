@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import { expect } from 'chai'
 import { afterEach } from 'mocha'
-import GooglePage from '../page_objects/google.page'
+import GooglePage from '../../page_objects/google.page'
 import { Key } from 'selenium-webdriver/lib/input'
-import { DriversFactory } from '../../src/uidriver/drivers-factory'
+import { DriversFactory } from '../../../src/uidriver/drivers-factory'
 
-describe('Google search', () => {
+describe('Google search - @ci', () => {
   it('AC1: Search github/n-ton', async () => {
 
     await GooglePage.goToUrl()
